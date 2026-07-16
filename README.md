@@ -11,11 +11,14 @@
 
 | 앱 | 설명 | 바로가기 |
 |---|---|---|
-| 🎯 **ML 쇼케이스** (추천) | 6페이지 통합 — 아래 모델 전부 + 에이전트 | _배포 URL 입력_ |
-| 🐧 펭귄 분류 | 인터랙티브 EDA + RandomForest | _배포 URL 입력_ |
-| 📚 PDF RAG 챗봇 | 내 문서 업로드 → 질문 → LLM 답변 | _배포 URL 입력_ |
+| 🎯 **ML 쇼케이스** (추천) | 6페이지 통합 — 아래 모델 전부 + 에이전트 | [열기](https://app2-i3qsojjspfj3bxpbwc7dmt.streamlit.app/) |
+| 🐧 펭귄 분류 | 인터랙티브 EDA + RandomForest | [열기](https://app2-jsojkw9cctyh9yahqsyz7n.streamlit.app/) |
+| 🫀 심장병 위험 예측 | EDA + 13개 지표 위험 확률 | [열기](https://app2-rnbsncriohhdasyzfgv8ym.streamlit.app/) |
+| 🖼️ 이미지 분류 | MobileNetV2 + occlusion 히트맵(XAI) | [열기](https://v2kgfh2nsnmn9ytyrmo8xb.streamlit.app/) |
+| 📚 PDF RAG 챗봇 | 내 문서 업로드 → 질문 → LLM 답변 | [열기](https://app2-cqc6rxtgfvseuz4axitzk4.streamlit.app/) |
 
 > 쇼케이스 하나로 전체를 볼 수 있습니다 — 개별 앱은 같은 코드의 단독 실행 버전입니다.
+> 함께 운영 중인 다른 데모: [공공 Web API 실습](https://260406webapipractice.streamlit.app/) · [MNIST CNN 숫자 인식기](https://mnist-app-aihuman.streamlit.app/) (별도 저장소)
 
 ## ✨ 하이라이트
 
