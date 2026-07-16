@@ -149,6 +149,19 @@ def fake_route(question: str, session_image=None) -> Iterator[str]:
         yield run_tool("classify_image", {}, session_image=session_image) + "\n"
         return
 
+    # 심장병 위험 — '심장' 주제어 + 첫 숫자를 나이로 사용(나머지 지표는 tool이 중앙값으로 채움).
+    if "심장" in q:
+        args = {"age": float(nums[0])} if nums else {}
+        yield f"🔧 `predict_heart` 호출 (args={args})\n\n"
+        yield run_tool("predict_heart", args, session_image=session_image) + "\n"
+        return
+
+    # 문서 검색 — RAG 챗봇 페이지에서 업로드한 문서의 청크를 검색(없으면 tool이 안내).
+    if any(k in q for k in ["문서", "pdf", "PDF", "자료에서"]):
+        yield f"🔧 `search_docs` 호출 (query={q!r})\n\n"
+        yield run_tool("search_docs", {"query": q}, session_image=session_image) + "\n"
+        return
+
     # [Codex] '긍정'/'부정'은 결과(outcome) 단어라 '부정확' 같은 단어에 오탐된다 — 요청/주제 단어만 트리거로.
     if any(k in q for k in ["감성", "감정", "리뷰", "기분"]):
         text = q.split(":", 1)[1].strip() if ":" in q else q
@@ -157,7 +170,8 @@ def fake_route(question: str, session_image=None) -> Iterator[str]:
         return
 
     yield ("어떤 도구를 쓸지 못 정했어요. 예) `감성분석: 이 영화 최고예요` / "
-           "`펭귄 종 분류: 39 18 181 3750` / 이미지를 올린 뒤 `이미지 분류해줘`.\n")
+           "`펭귄 종 분류: 39 18 181 3750` / `62세 심장병 위험 알려줘` / "
+           "`문서에서 주차 규정 찾아줘`(RAG 페이지에 업로드 후) / 이미지를 올린 뒤 `이미지 분류해줘`.\n")
 
 
 def run_agent(question: str, provider: str, session_image=None) -> Iterator[str]:

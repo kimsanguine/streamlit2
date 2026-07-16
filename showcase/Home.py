@@ -45,13 +45,25 @@ with d3:
         st.caption("KoELECTRA · 한국어 문장 긍정/부정")
         st.page_link("pages/3_💬_감성_분석.py", label="감성 분석 열기 →", use_container_width=True)
 
+d4, d5, _ = st.columns(3)
+with d4:
+    with st.container(border=True):
+        st.markdown("### 🫀 심장병 예측")
+        st.caption("RandomForest · UCI 1,025명 · 13개 지표 위험 확률")
+        st.page_link("pages/5_🫀_심장병_예측.py", label="심장병 예측 열기 →", use_container_width=True)
+with d5:
+    with st.container(border=True):
+        st.markdown("### 📚 RAG 챗봇")
+        st.caption("내 문서 업로드 · 청킹 → 검색 → LLM 생성 답변")
+        st.page_link("pages/6_📚_RAG_챗봇.py", label="RAG 챗봇 열기 →", use_container_width=True)
+
 # 포트폴리오 하이라이트 — 에이전트 배너를 above-the-fold에 전폭 노출.
 with st.container(border=True):
     c_txt, c_cta = st.columns([3, 1], vertical_alignment="center")
     with c_txt:
         st.markdown("### 🤖 tool-calling 에이전트")
         st.caption(
-            "위 3개 모델을 도구로 지휘하는 에이전트 — 아무 문장이나 넣으면 "
+            "위 5개(펭귄·이미지·감성·심장병·문서 검색)를 도구로 지휘하는 에이전트 — 아무 문장이나 넣으면 "
             "어떤 도구를 왜 불렀는지 trace가 그대로 보입니다."
         )
     with c_cta:

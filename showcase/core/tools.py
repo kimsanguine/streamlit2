@@ -3,7 +3,7 @@
 # [설계] calculate 같은 튜토리얼 tool은 두지 않는다(M4/P2) — 3 ML tool로 깔끔하게.
 import logging
 
-from showcase.core.models import predict_image, predict_penguin, predict_sentiment
+from showcase.core.models import predict_heart, predict_image, predict_penguin, predict_sentiment
 
 # --- OpenAI function-calling 스키마 ---
 AGENT_TOOLS = [
@@ -47,6 +47,41 @@ AGENT_TOOLS = [
             "parameters": {"type": "object", "properties": {}, "required": []},
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "predict_heart",
+            "description": "나이 등 주요 지표로 심장병 위험 확률을 예측한다(교육용 데모 — 의료 진단 아님). "
+                           "미입력 지표는 데이터 중앙값으로 채운다.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "age": {"type": "number", "description": "나이"},
+                    "sex": {"type": "integer", "description": "성별 (0=여성, 1=남성)"},
+                    "cp": {"type": "integer", "description": "가슴통증 유형 (0~3, 3=무증상)"},
+                    "thalach": {"type": "number", "description": "최대 심박수"},
+                    "exang": {"type": "integer", "description": "운동 유발 협심증 (0=없음, 1=있음)"},
+                    "oldpeak": {"type": "number", "description": "운동 후 ST 하강"},
+                },
+                "required": ["age"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            # [설계] classify_image와 같은 session 사이드채널 계열 — 문서 본문을 JSON 인자로 넘기는 대신,
+            #   📚 RAG 챗봇 페이지에서 업로드한 문서의 청크(st.session_state["rag_chunks"])를 검색한다.
+            "name": "search_docs",
+            "description": "사용자가 RAG 챗봇 페이지에서 업로드한 문서에서 질문과 관련된 대목을 찾아 준다. "
+                           "업로드된 문서가 없으면 그 사실을 알려준다.",
+            "parameters": {
+                "type": "object",
+                "properties": {"query": {"type": "string", "description": "찾을 내용(질문 그대로도 가능)"}},
+                "required": ["query"],
+            },
+        },
+    },
 ]
 
 
@@ -71,10 +106,47 @@ def _classify_image(args: dict, session_image=None) -> str:
     return "top-5: " + ", ".join(f"{name}({p:.1%})" for name, p in top5)
 
 
+def _predict_heart(args: dict, session_image=None) -> str:
+    # [왜] LLM이 문자열 숫자를 넘겨도 죽지 않게 숫자만 골라 쓴다 — 나머지는 중앙값으로 채워진다.
+    numeric = {}
+    for k, v in (args or {}).items():
+        try:
+            numeric[k] = float(v)
+        except (TypeError, ValueError):
+            continue
+    out = predict_heart(numeric)
+    filled = f" · 미입력 {len(out['filled'])}개 지표는 데이터 중앙값 사용" if out["filled"] else ""
+    return f"심장병 위험 확률: {out['proba']:.1%}{filled} (교육용 데모 — 의료 진단 아님)"
+
+
+def _search_docs(args: dict, session_image=None) -> str:
+    # [왜] 지연 import — 이 함수는 Streamlit 세션 안에서만 호출된다(문서 청크가 session_state에 있음).
+    import streamlit as st
+
+    from apps.rag_lite import _top_matches, build_index
+
+    query = (args.get("query") or "").strip()
+    if not query:
+        return "검색어가 비어 있습니다 — 무엇을 찾을지 알려주세요."
+    chunks = st.session_state.get("rag_chunks") or []
+    if not chunks:
+        return "업로드된 문서가 없습니다 — 📚 RAG 챗봇 페이지에서 문서를 올린 뒤 다시 물어보세요."
+    vectorizer, matrix = build_index(tuple(chunks))
+    matches = _top_matches(query, chunks, vectorizer, matrix, top_k=2)
+    doc_name = st.session_state.get("rag_doc_name", "업로드 문서")
+    lines = [f"'{doc_name}'에서 관련 대목 {len(matches)}개:"]
+    for rank, (_, chunk, score) in enumerate(matches, start=1):
+        snippet = " ".join(chunk.split())[:140]
+        lines.append(f"{rank}. (유사도 {score:.2f}) {snippet}…")
+    return "\n".join(lines)
+
+
 TOOL_FUNCTIONS = {
     "classify_penguin": _classify_penguin,
     "analyze_sentiment": _analyze_sentiment,
     "classify_image": _classify_image,
+    "predict_heart": _predict_heart,
+    "search_docs": _search_docs,
 }
 
 

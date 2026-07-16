@@ -66,3 +66,26 @@ def get_sentiment_pipeline():
 def predict_sentiment(text: str) -> dict:
     """문장 → {label: '긍정'/'부정', score}. apps/m4_sentiment.analyze의 라벨 매핑(1→긍정)을 그대로 재사용."""
     return _analyze_sentiment(text)
+
+
+@st.cache_resource
+def get_heart_model():
+    """심장병 분류기(RandomForest)·test 정확도·피처 중앙값을 재사용한다 (apps/heart_disease.train_model)."""
+    from apps.heart_disease import FEATURES, load_data, train_model  # 지연 import(matplotlib rcParams 전역변경 격리)
+
+    df = load_data()
+    model, test_acc, _ = train_model(df)
+    return model, test_acc, df[FEATURES].median().to_dict()
+
+
+def predict_heart(features: dict) -> dict:
+    """주요 지표 dict → {proba, test_acc, filled}. 에이전트 tool(predict_heart)이 호출한다.
+    [왜] 13개 지표를 전부 물으면 에이전트 대화가 설문이 된다 — 미입력 지표는 데이터 중앙값으로
+    채우고, 무엇을 채웠는지(filled)를 함께 돌려줘 사용자가 근사치임을 알게 한다."""
+    from apps.heart_disease import FEATURES
+
+    model, test_acc, medians = get_heart_model()
+    row = {f: features.get(f, medians[f]) for f in FEATURES}
+    X = pd.DataFrame([[row[f] for f in FEATURES]], columns=FEATURES)
+    proba = float(model.predict_proba(X)[0][1])
+    return {"proba": proba, "test_acc": test_acc, "filled": [f for f in FEATURES if f not in features]}
