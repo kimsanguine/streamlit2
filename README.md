@@ -17,6 +17,7 @@ python -m streamlit run apps/m3_penguins.py
 |---|---|---|
 | `m1_hello.py` | Streamlit 기본 문법 데모 | ✗ |
 | `m3_penguins.py` | 펭귄 분류 인터랙티브 EDA + ML (배포 1순위 — 가장 가벼움) | ✗ |
+| `heart_disease.py` | **심장병 위험 예측 대시보드** — EDA + 13피처 입력 예측 (`data/heart.csv` 동봉, UCI CC BY) | ✗ |
 | `eda_template.py` | CSV 업로드 EDA 템플릿 (한국어 Excel CSV 지원) | ✗ |
 | `m4_image.py` | 이미지 분류 + occlusion 히트맵 (torch) | ✗ |
 | `m4_sentiment.py` | 한국어 감성분석 일괄 채점 데모 (KoELECTRA) | ✗ |
