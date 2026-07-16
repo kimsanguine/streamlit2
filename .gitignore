@@ -1,0 +1,21 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+.streamlit/secrets.toml
+showcase/.streamlit/secrets.toml
+.DS_Store
+
+# 실습(🔨) 셀이 생성하는 학생용 연습 파일 — 정답 아님, 커밋 대상 아님
+apps/ex*.py
+
+# 특강_streamlit_핵심실습 실습이 생성하는 학생용 파일 — 커밋 대상 아님
+강의_AI_Pair/app*.py
+강의_AI_Pair/final_project_starter.py
+
+# 노트북 %%writefile 실행 시 재생성되는 폴더 — canonical은 루트 apps/
+강의_AI_Pair/apps/
+
+# 강의자료(교안 노트북)는 이 배포 저장소에 올리지 않음
+강의_AI_Pair/
