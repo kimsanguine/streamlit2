@@ -59,20 +59,30 @@ def answer_with_context(question: str, context: str, provider: str) -> str:
     """[신규] 검색된 컨텍스트를 근거로 LLM에게 답을 요청한다 — 도구 호출 루프 없는 단순 완성 호출이다
     (검색은 이미 위 retrieve()에서 끝났으므로 4절의 tool-calling 루프는 필요 없다).
     키가 없으면 안내 문구만 반환한다 — 검색된 문서 조각 자체는 main()의 '📄 출처 청크 보기' expander가
-    이미 따로 보여주므로, 여기서 context를 또 포함하면 화면에 같은 내용이 두 번 노출된다."""
-    if not provider_available(provider):
+    이미 따로 보여주므로, 여기서 context를 또 포함하면 화면에 같은 내용이 두 번 노출된다.
+    [왜 폴백] 무료 모델(openrouter :free)은 혼잡 시 429로 거절될 수 있다(실측) — 선택한 provider가
+    실패하면 키/서버가 살아 있는 다른 provider로 한 번씩 이어서 시도해, 가능한 한 '생성된 답변'으로
+    끝나게 한다. 어떤 provider가 답했는지는 답변 앞에 표시한다."""
+    candidates = [provider] + [p for p in PROVIDERS if p != provider]
+    available = [p for p in candidates if provider_available(p)]
+    if not available:
         return "🧪 **데모 모드**(LLM 키 없음) — 아래 '📄 출처 청크 보기'에서 검색된 문서 조각을 확인하세요."
-    try:
-        client = get_client(provider)
-        model = PROVIDERS[provider]["model"]
-        messages = [
-            {"role": "system", "content": "너는 주어진 문서 조각만 근거로 한국어로 답하는 조수다. 문서에 없는 내용은 모른다고 답해라."},
-            {"role": "user", "content": f"[문서]\n{context}\n\n[질문]\n{question}"},
-        ]
-        response = client.chat.completions.create(model=model, messages=messages)
-        return response.choices[0].message.content or ""
-    except Exception as e:  # noqa: BLE001
-        return f"⚠️ LLM 호출 실패: {e}"
+    messages = [
+        {"role": "system", "content": "너는 주어진 문서 조각만 근거로 한국어로 답하는 조수다. 문서에 없는 내용은 모른다고 답해라."},
+        {"role": "user", "content": f"[문서]\n{context}\n\n[질문]\n{question}"},
+    ]
+    errors = []
+    for p in available:
+        try:
+            client = get_client(p)
+            response = client.chat.completions.create(model=PROVIDERS[p]["model"], messages=messages)
+            answer = response.choices[0].message.content or ""
+            if answer:
+                prefix = "" if p == provider else f"↩️ *{provider} 실패 → **{p}**로 폴백해 답변했습니다.*\n\n"
+                return prefix + answer
+        except Exception as e:  # noqa: BLE001 — 다음 provider로 넘어가기 위해 오류를 모아둔다
+            errors.append(f"{p}: {e}")
+    return "⚠️ 모든 LLM provider 호출 실패:\n- " + "\n- ".join(str(e)[:200] for e in errors)
 
 
 def main():
@@ -101,14 +111,23 @@ def main():
 
     with st.sidebar:
         st.subheader("⚙️ Provider 설정")
+        # [왜] 키/서버가 살아 있는 provider를 자동 감지해 기본값으로 고른다 — 학생이 provider 개념을
+        #      몰라도 "업로드 → 질문 → LLM 생성 답변"이 끊기지 않는다. 하나도 없으면 첫 항목을 두고
+        #      데모 모드 안내를 보여준다.
         embed_names = list(EMBED_PROVIDERS)
-        embed_provider = st.selectbox("임베딩 provider", embed_names, index=embed_names.index("local"))
-        if not embed_provider_available(embed_provider):
+        embed_default = next((n for n in embed_names if embed_provider_available(n)), embed_names[0])
+        embed_provider = st.selectbox("임베딩 provider", embed_names, index=embed_names.index(embed_default))
+        if embed_provider_available(embed_provider):
+            st.caption(f"✅ {embed_provider} 연결됨 — 의미 기반(임베딩) 검색을 사용합니다.")
+        else:
             st.caption("🔤 키/서버 없음 → 검색 시 TF-IDF로 자동 폴백합니다.")
         llm_names = list(PROVIDERS)
-        llm_provider = st.selectbox("LLM provider", llm_names, index=llm_names.index("openai"))
-        if not provider_available(llm_provider):
-            st.caption("🧪 키/서버 없음 → 답변 시 데모 모드로 동작합니다.")
+        llm_default = next((n for n in llm_names if provider_available(n)), llm_names[0])
+        llm_provider = st.selectbox("LLM provider", llm_names, index=llm_names.index(llm_default))
+        if provider_available(llm_provider):
+            st.caption(f"✅ {llm_provider} 연결됨 — 검색된 근거로 LLM이 답변을 생성합니다.")
+        else:
+            st.caption("🧪 키/서버 없음 → 답변 시 데모 모드(검색 결과만 표시)로 동작합니다.")
 
     uploaded = st.file_uploader("문서 업로드 (txt·md·pdf)", type=["txt", "md", "pdf"])
     if uploaded is None:

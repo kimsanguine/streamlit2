@@ -20,6 +20,13 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+# [왜] API 키는 코드가 아니라 .env 파일에 둔다(20강 규약) — 이 파일 위치에서 상위 폴더로 올라가며
+#      .env를 찾아 환경변수로 로드한다(셸에 이미 설정된 값은 덮어쓰지 않음). 이 호출이 없으면
+#      .env에 키를 적어도 provider_available()이 False가 되어 조용히 데모 모드로 빠진다.
+#      Streamlit Cloud에서는 Secrets가 환경변수로 주입되므로 이 호출은 조용히 통과한다.
+from dotenv import load_dotenv
+load_dotenv()
+
 
 # ── provider 규약 (20강 계승, base_url만 전환) ──
 PROVIDERS = {
